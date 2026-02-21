@@ -1,66 +1,81 @@
-# conversorcode
+# Legacy2Modern Backend
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Quarkus 3.27 backend with Java 21 and strict hexagonal architecture for the `migration` module.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Structure
 
-## Running the application in dev mode
+```text
+src/main/java/art/ourhyt/legacy2modern/
+  migration/
+    domain/
+    application/
+    infrastructure/
+```
 
-You can run your application in dev mode that enables live coding using:
+## Hexagonal Diagram
 
-```shell script
+```mermaid
+graph LR
+  Client[REST Client] --> Resource[Infrastructure REST Resource]
+  Resource --> UseCase[Application MigrateLegacyCodeUseCase]
+  UseCase --> EnginePort[Application MigrationEnginePort]
+  UseCase --> PolicyPort[Application PayloadPolicyPort]
+  EnginePort --> EngineAdapter[Infrastructure RuleBasedMigrationEngineAdapter]
+  EngineAdapter --> RuleCatalogPort[Application RuleCatalogPort]
+  RuleCatalogPort --> RuleCatalogAdapter[Infrastructure InMemoryRuleCatalogAdapter]
+  RuleCatalogAdapter --> DomainRules[Domain Rules]
+  EngineAdapter --> WarningDetector[Domain WarningDetector]
+```
+
+## API
+
+`POST /migrate`
+
+Headers:
+- `Content-Type: application/json`
+- `X-API-KEY: <key>`
+
+Body:
+
+```json
+{
+  "sourceLanguage": "COBOL",
+  "targetLanguage": "JAVA",
+  "targetVersion": "21",
+  "code": "IF A = B THEN\nDISPLAY 'OK'\nEND-IF"
+}
+```
+
+## Local Run
+
+```bash
+export MIGRATION_API_KEY=dev-api-key
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## Test
 
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
+```bash
+mvn test
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## AWS Deployment Notes
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+- Frontend: CloudFront + S3
+- Backend: API Gateway + Lambda or container on ECS/Fargate
+- Logs: CloudWatch Logs for request metadata and error tracking
+- Recommended controls: API Gateway usage plans, WAF rate limiting rules, AWS Secrets Manager for API key
 
-If you want to build an _über-jar_, execute the following command:
+## Security Risks and Mitigations
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+- Risk: unauthorized access
+- Mitigation: required `X-API-KEY` validated against `MIGRATION_API_KEY`
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+- Risk: oversized payload denial-of-service
+- Mitigation: HTTP body limit (`200K`) and application limits (`max bytes`, `max lines`)
 
-## Creating a native executable
+- Risk: unsafe code execution
+- Mitigation: deterministic string transformation only, no eval/compile/run path
 
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/conversorcode-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+- Risk: sensitive data exposure in logs
+- Mitigation: logs include metadata only and never raw input code
