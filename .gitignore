@@ -15,6 +15,8 @@ out/
 .vscode/
 .history/
 
+**/AGENTS.md
+
 # ===== Eclipse =====
 .project
 .classpath
