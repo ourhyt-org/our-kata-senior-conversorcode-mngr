@@ -1,7 +1,7 @@
 package art.ourhyt.legacy2modern.migration.infrastructure.adapters.output.engine;
 
 import art.ourhyt.legacy2modern.migration.domain.model.SourceLanguage;
-import art.ourhyt.legacy2modern.migration.domain.ports.output.RuleCatalogPort;
+import art.ourhyt.legacy2modern.migration.domain.ports.outputs.RuleCatalogPort;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolCommentRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolDisplayRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolElseRule;

@@ -8,7 +8,6 @@ Thumbs.db
 *.iml
 *.iws
 *.ipr
-src/main/java/art/ourhyt/legacy2modern/migration/domain/ports/output/
 .idea_modules/
 
 # ===== VS Code =====

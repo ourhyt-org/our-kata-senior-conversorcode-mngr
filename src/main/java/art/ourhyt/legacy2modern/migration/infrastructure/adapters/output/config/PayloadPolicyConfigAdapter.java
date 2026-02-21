@@ -1,6 +1,6 @@
 package art.ourhyt.legacy2modern.migration.infrastructure.adapters.output.config;
 
-import art.ourhyt.legacy2modern.migration.domain.ports.output.PayloadPolicyPort;
+import art.ourhyt.legacy2modern.migration.domain.ports.outputs.PayloadPolicyPort;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
