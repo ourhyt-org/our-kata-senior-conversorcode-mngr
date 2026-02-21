@@ -8,8 +8,24 @@ Quarkus 3.27 backend with Java 21 and strict hexagonal architecture for the `mig
 src/main/java/art/ourhyt/legacy2modern/
   migration/
     domain/
+      model/
+      rules/
+      services/
+      ports/
+        in/
+        out/
     application/
+      dto/
+      exceptions/
+      services/
     infrastructure/
+      adapters/
+        in/
+          rest/
+        out/
+          engine/
+          config/
+      security/
 ```
 
 ## Hexagonal Diagram
@@ -17,11 +33,12 @@ src/main/java/art/ourhyt/legacy2modern/
 ```mermaid
 graph LR
   Client[REST Client] --> Resource[Infrastructure REST Resource]
-  Resource --> UseCase[Application MigrateLegacyCodeUseCase]
-  UseCase --> EnginePort[Application MigrationEnginePort]
-  UseCase --> PolicyPort[Application PayloadPolicyPort]
+  Resource --> InPort[Domain Input Port]
+  InPort --> AppService[Application MigrateLegacyCodeService]
+  AppService --> EnginePort[Domain Output Port MigrationEnginePort]
+  AppService --> PolicyPort[Domain Output Port PayloadPolicyPort]
   EnginePort --> EngineAdapter[Infrastructure RuleBasedMigrationEngineAdapter]
-  EngineAdapter --> RuleCatalogPort[Application RuleCatalogPort]
+  EngineAdapter --> RuleCatalogPort[Domain Output Port RuleCatalogPort]
   RuleCatalogPort --> RuleCatalogAdapter[Infrastructure InMemoryRuleCatalogAdapter]
   RuleCatalogAdapter --> DomainRules[Domain Rules]
   EngineAdapter --> WarningDetector[Domain WarningDetector]
