@@ -6,8 +6,8 @@ import art.ourhyt.legacy2modern.migration.application.exceptions.PayloadTooLarge
 import art.ourhyt.legacy2modern.migration.application.exceptions.ValidationException;
 import art.ourhyt.legacy2modern.migration.domain.model.SourceLanguage;
 import art.ourhyt.legacy2modern.migration.domain.model.TargetLanguage;
-import art.ourhyt.legacy2modern.migration.domain.ports.out.PayloadPolicyPort;
-import art.ourhyt.legacy2modern.migration.domain.ports.out.RuleCatalogPort;
+import art.ourhyt.legacy2modern.migration.domain.ports.output.PayloadPolicyPort;
+import art.ourhyt.legacy2modern.migration.domain.ports.output.RuleCatalogPort;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolCommentRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolDisplayRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolElseRule;
@@ -16,7 +16,7 @@ import art.ourhyt.legacy2modern.migration.domain.rules.CobolIfRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolMoveRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolStopRunRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolUnknownLineRule;
-import art.ourhyt.legacy2modern.migration.infrastructure.adapters.out.engine.RuleBasedMigrationEngineAdapter;
+import art.ourhyt.legacy2modern.migration.infrastructure.adapters.output.engine.RuleBasedMigrationEngineAdapter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

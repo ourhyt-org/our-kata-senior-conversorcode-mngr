@@ -6,8 +6,8 @@ import art.ourhyt.legacy2modern.migration.application.exceptions.PayloadTooLarge
 import art.ourhyt.legacy2modern.migration.application.exceptions.ValidationException;
 import art.ourhyt.legacy2modern.migration.domain.model.MigrationResult;
 import art.ourhyt.legacy2modern.migration.domain.ports.in.MigrateLegacyCodeInputPort;
-import art.ourhyt.legacy2modern.migration.domain.ports.out.MigrationEnginePort;
-import art.ourhyt.legacy2modern.migration.domain.ports.out.PayloadPolicyPort;
+import art.ourhyt.legacy2modern.migration.domain.ports.output.MigrationEnginePort;
+import art.ourhyt.legacy2modern.migration.domain.ports.output.PayloadPolicyPort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
