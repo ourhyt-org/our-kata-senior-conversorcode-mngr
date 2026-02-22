@@ -12,7 +12,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public final class CobolIfRule implements Rule {
-    private static final Pattern IF_PATTERN = Patterns.cobolStmt("IF\\s+(.+?)\\s+THEN");
+    private static final Pattern IF_PATTERN =
+            Patterns.cobolStmt("IF\\s+(.+?)(?:\\s+THEN)?");
 
     @Override
     public String id() {
