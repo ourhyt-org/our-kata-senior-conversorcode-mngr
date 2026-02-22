@@ -2,7 +2,7 @@ name: Deploy Quarkus Lambda (Java 21) - QA
 
 on:
   push:
-    branches: [qa]
+    branches: [qa, feature/*]
   workflow_dispatch: {}
 
 permissions:
