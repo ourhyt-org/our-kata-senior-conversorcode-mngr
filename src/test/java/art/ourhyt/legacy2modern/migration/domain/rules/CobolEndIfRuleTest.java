@@ -22,4 +22,15 @@ class CobolEndIfRuleTest {
         assertEquals("}", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
     }
+
+    @Test
+    void transformsEndIfWithTrailingDot() {
+        final CobolEndIfRule rule = new CobolEndIfRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
+
+        final RuleResult result = rule.apply(List.of("END-IF."), context);
+
+        assertEquals("}", result.updatedLines().getFirst());
+        assertEquals(1, result.matchesCount());
+    }
 }

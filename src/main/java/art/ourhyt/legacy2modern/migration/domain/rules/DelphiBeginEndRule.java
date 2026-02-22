@@ -1,11 +1,9 @@
 package art.ourhyt.legacy2modern.migration.domain.rules;
 
-import art.ourhyt.legacy2modern.migration.domain.model.*;
+import art.ourhyt.legacy2modern.migration.domain.model.MigrationContext;
+import art.ourhyt.legacy2modern.migration.domain.model.SourceLanguage;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public final class DelphiBeginEndRule implements Rule {
+public final class DelphiBeginEndRule extends SourceSpecificRule {
     @Override
     public String id() {
         return "RULE_DELPHI_BEGIN_END";
@@ -22,25 +20,19 @@ public final class DelphiBeginEndRule implements Rule {
     }
 
     @Override
-    public RuleResult apply(List<String> lines, MigrationContext context) {
-        if (context.sourceLanguage() != SourceLanguage.DELPHI) {
-            return new RuleResult(lines, 0, List.of());
+    protected SourceLanguage sourceLanguage() {
+        return SourceLanguage.DELPHI;
+    }
+
+    @Override
+    protected LineTransform transformLine(String line, MigrationContext context, int lineNumber) {
+        final String trimmed = line.trim();
+        if (trimmed.equalsIgnoreCase("begin")) {
+            return match("{");
         }
-        final List<String> updated = new ArrayList<>(lines.size());
-        final List<Integer> lineNumbers = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i++) {
-            final String line = lines.get(i);
-            final String trimmed = line.trim();
-            if (trimmed.equalsIgnoreCase("begin")) {
-                updated.add("{");
-                lineNumbers.add(i + 1);
-            } else if (trimmed.equalsIgnoreCase("end") || trimmed.equalsIgnoreCase("end;")) {
-                updated.add("}");
-                lineNumbers.add(i + 1);
-            } else {
-                updated.add(line);
-            }
+        if (trimmed.equalsIgnoreCase("end") || trimmed.equalsIgnoreCase("end;") || trimmed.equalsIgnoreCase("end.")) {
+            return match("}");
         }
-        return new RuleResult(updated, lineNumbers.size(), lineNumbers);
+        return keep(line);
     }
 }

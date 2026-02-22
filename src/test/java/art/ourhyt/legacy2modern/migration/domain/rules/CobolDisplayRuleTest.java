@@ -22,4 +22,15 @@ class CobolDisplayRuleTest {
         assertEquals("console.log(\"HELLO\");", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
     }
+
+    @Test
+    void transformsDisplayWithTrailingDot() {
+        final CobolDisplayRule rule = new CobolDisplayRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
+
+        final RuleResult result = rule.apply(List.of("DISPLAY \"HELLO\"."), context);
+
+        assertEquals("System.out.println(\"HELLO\");", result.updatedLines().getFirst());
+        assertEquals(1, result.matchesCount());
+    }
 }

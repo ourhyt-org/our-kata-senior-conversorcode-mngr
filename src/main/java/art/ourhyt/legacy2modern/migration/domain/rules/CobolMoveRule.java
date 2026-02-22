@@ -1,14 +1,19 @@
 package art.ourhyt.legacy2modern.migration.domain.rules;
 
-import art.ourhyt.legacy2modern.migration.domain.model.*;
+import art.ourhyt.legacy2modern.migration.domain.model.MigrationContext;
+import art.ourhyt.legacy2modern.migration.domain.model.RuleResult;
+import art.ourhyt.legacy2modern.migration.domain.model.SourceLanguage;
+import art.ourhyt.legacy2modern.migration.domain.model.TargetLanguage;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.LegacyLineNormalizer;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.Patterns;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.RuleSupport;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public final class CobolMoveRule implements Rule {
-    private static final Pattern PATTERN = Pattern.compile("^\\s*MOVE\\s+(.+?)\\s+TO\\s+([A-Za-z0-9_-]+)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MOVE_PATTERN = Patterns.cobolStmt("MOVE\\s+(.+?)\\s+TO\\s+([A-Za-z0-9_-]+)");
 
     @Override
     public String id() {
@@ -30,21 +35,16 @@ public final class CobolMoveRule implements Rule {
         if (context.sourceLanguage() != SourceLanguage.COBOL) {
             return new RuleResult(lines, 0, List.of());
         }
-        final List<String> updated = new ArrayList<>(lines.size());
-        final List<Integer> lineNumbers = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i++) {
-            final String line = lines.get(i);
-            final Matcher matcher = PATTERN.matcher(line);
+        return RuleSupport.mapLines(lines, context, (line, ctx, lineNumber) -> {
+            final String normalized = LegacyLineNormalizer.normalizeCobolStatement(line);
+            final var matcher = MOVE_PATTERN.matcher(normalized);
             if (matcher.matches()) {
-                final String source = matcher.group(1).trim();
-                final String destination = matcher.group(2).trim();
-                updated.add(renderAssignment(source, destination, context.targetLanguage()));
-                lineNumbers.add(i + 1);
-            } else {
-                updated.add(line);
+                final String source = matcher.group(2).trim();
+                final String destination = matcher.group(3).trim();
+                return Optional.of(renderAssignment(source, destination, ctx.targetLanguage()));
             }
-        }
-        return new RuleResult(updated, lineNumbers.size(), lineNumbers);
+            return Optional.empty();
+        });
     }
 
     private String renderAssignment(String source, String destination, TargetLanguage targetLanguage) {

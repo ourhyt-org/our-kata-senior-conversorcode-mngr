@@ -10,8 +10,10 @@ import art.ourhyt.legacy2modern.migration.domain.rules.CobolIfRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolMoveRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolStopRunRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.CobolUnknownLineRule;
+import art.ourhyt.legacy2modern.migration.domain.rules.DelphiAssignmentRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.DelphiBeginEndRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.DelphiUnknownLineRule;
+import art.ourhyt.legacy2modern.migration.domain.rules.DelphiWritelnRule;
 import art.ourhyt.legacy2modern.migration.domain.rules.Rule;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -24,6 +26,8 @@ public class InMemoryRuleCatalogAdapter implements RuleCatalogPort {
         if (sourceLanguage == SourceLanguage.DELPHI) {
             return List.of(
                 new DelphiBeginEndRule(),
+                new DelphiWritelnRule(),
+                new DelphiAssignmentRule(),
                 new DelphiUnknownLineRule()
             );
         }

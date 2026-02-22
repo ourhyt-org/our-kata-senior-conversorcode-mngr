@@ -1,11 +1,19 @@
 package art.ourhyt.legacy2modern.migration.domain.rules;
 
-import art.ourhyt.legacy2modern.migration.domain.model.*;
+import art.ourhyt.legacy2modern.migration.domain.model.MigrationContext;
+import art.ourhyt.legacy2modern.migration.domain.model.RuleResult;
+import art.ourhyt.legacy2modern.migration.domain.model.SourceLanguage;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.LegacyLineNormalizer;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.Patterns;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.RuleSupport;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 public final class CobolElseRule implements Rule {
+    private static final Pattern ELSE_PATTERN = Patterns.cobolStmt("ELSE");
+
     @Override
     public String id() {
         return "RULE_ELSE";
@@ -26,17 +34,12 @@ public final class CobolElseRule implements Rule {
         if (context.sourceLanguage() != SourceLanguage.COBOL) {
             return new RuleResult(lines, 0, List.of());
         }
-        final List<String> updated = new ArrayList<>(lines.size());
-        final List<Integer> lineNumbers = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i++) {
-            final String line = lines.get(i);
-            if (line.trim().equalsIgnoreCase("ELSE")) {
-                updated.add("} else {");
-                lineNumbers.add(i + 1);
-            } else {
-                updated.add(line);
+        return RuleSupport.mapLines(lines, context, (line, ctx, lineNumber) -> {
+            final String normalized = LegacyLineNormalizer.normalizeCobolStatement(line);
+            if (ELSE_PATTERN.matcher(normalized).matches()) {
+                return Optional.of("} else {");
             }
-        }
-        return new RuleResult(updated, lineNumbers.size(), lineNumbers);
+            return Optional.empty();
+        });
     }
 }

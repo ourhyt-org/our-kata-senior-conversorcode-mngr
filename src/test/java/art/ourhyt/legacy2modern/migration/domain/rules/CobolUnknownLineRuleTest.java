@@ -22,4 +22,15 @@ class CobolUnknownLineRuleTest {
         assertEquals("// TODO: UNMAPPED: ADD A TO B", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
     }
+
+    @Test
+    void doesNotWrapAlreadyTransformedLine() {
+        final CobolUnknownLineRule rule = new CobolUnknownLineRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
+
+        final RuleResult result = rule.apply(List.of("if (A = B) {"), context);
+
+        assertEquals("if (A = B) {", result.updatedLines().getFirst());
+        assertEquals(0, result.matchesCount());
+    }
 }

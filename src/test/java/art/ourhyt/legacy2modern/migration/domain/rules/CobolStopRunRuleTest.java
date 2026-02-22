@@ -22,4 +22,15 @@ class CobolStopRunRuleTest {
         assertEquals("System.exit(0);", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
     }
+
+    @Test
+    void transformsStopRunWithTrailingDot() {
+        final CobolStopRunRule rule = new CobolStopRunRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
+
+        final RuleResult result = rule.apply(List.of("STOP RUN."), context);
+
+        assertEquals("System.exit(0);", result.updatedLines().getFirst());
+        assertEquals(1, result.matchesCount());
+    }
 }

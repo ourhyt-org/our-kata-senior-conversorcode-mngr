@@ -1,14 +1,18 @@
 package art.ourhyt.legacy2modern.migration.domain.rules;
 
-import art.ourhyt.legacy2modern.migration.domain.model.*;
+import art.ourhyt.legacy2modern.migration.domain.model.MigrationContext;
+import art.ourhyt.legacy2modern.migration.domain.model.RuleResult;
+import art.ourhyt.legacy2modern.migration.domain.model.SourceLanguage;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.LegacyLineNormalizer;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.Patterns;
+import art.ourhyt.legacy2modern.migration.domain.rules.support.RuleSupport;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public final class CobolIfRule implements Rule {
-    private static final Pattern PATTERN = Pattern.compile("^\\s*IF\\s+(.+?)\\s+THEN\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern IF_PATTERN = Patterns.cobolStmt("IF\\s+(.+?)\\s+THEN");
 
     @Override
     public String id() {
@@ -30,18 +34,13 @@ public final class CobolIfRule implements Rule {
         if (context.sourceLanguage() != SourceLanguage.COBOL) {
             return new RuleResult(lines, 0, List.of());
         }
-        final List<String> updated = new ArrayList<>(lines.size());
-        final List<Integer> lineNumbers = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i++) {
-            final String line = lines.get(i);
-            final Matcher matcher = PATTERN.matcher(line);
+        return RuleSupport.mapLines(lines, context, (line, ctx, lineNumber) -> {
+            final String normalized = LegacyLineNormalizer.normalizeCobolStatement(line);
+            final var matcher = IF_PATTERN.matcher(normalized);
             if (matcher.matches()) {
-                updated.add("if (" + matcher.group(1).trim() + ") {");
-                lineNumbers.add(i + 1);
-            } else {
-                updated.add(line);
+                return Optional.of("if (" + matcher.group(2).trim() + ") {");
             }
-        }
-        return new RuleResult(updated, lineNumbers.size(), lineNumbers);
+            return Optional.empty();
+        });
     }
 }

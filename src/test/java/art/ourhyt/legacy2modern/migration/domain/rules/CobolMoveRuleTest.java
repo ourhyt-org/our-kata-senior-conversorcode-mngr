@@ -22,4 +22,15 @@ class CobolMoveRuleTest {
         assertEquals("B = A", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
     }
+
+    @Test
+    void transformsMoveWithTrailingDot() {
+        final CobolMoveRule rule = new CobolMoveRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.PYTHON, null);
+
+        final RuleResult result = rule.apply(List.of("MOVE A TO B."), context);
+
+        assertEquals("B = A", result.updatedLines().getFirst());
+        assertEquals(1, result.matchesCount());
+    }
 }
