@@ -29,8 +29,7 @@ jobs:
 
       - name: Build Lambda zip (Quarkus)
         run: |
-          chmod +x mvnw
-          ./mvnw -q clean package -DskipTests
+          mvn -q clean package -DskipTests
           test -f target/function.zip
 
       - name: Configure AWS credentials (OIDC)
