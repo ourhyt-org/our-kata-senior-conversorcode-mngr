@@ -35,4 +35,16 @@ class CobolIfRuleTest {
         assertEquals(1, result.matchesCount());
         assertEquals(List.of(1), result.lineNumbers());
     }
+
+    @Test
+    void doesNotTransformIfWithoutThen() {
+        final CobolIfRule rule = new CobolIfRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
+
+        final RuleResult result = rule.apply(List.of("IF AMOUNT > 0 ttt"), context);
+
+        assertEquals("IF AMOUNT > 0 ttt", result.updatedLines().getFirst());
+        assertEquals(0, result.matchesCount());
+        assertEquals(List.of(), result.lineNumbers());
+    }
 }

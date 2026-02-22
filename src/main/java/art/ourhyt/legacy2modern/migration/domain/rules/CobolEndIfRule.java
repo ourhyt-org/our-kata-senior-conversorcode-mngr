@@ -15,7 +15,7 @@ public final class CobolEndIfRule implements Rule {
     private static final Pattern END_IF_PATTERN = Patterns.cobolStmt("END-IF");
 
     @Override
-    public String id() {
+    public String id()  {
         return "RULE_END_IF";
     }
 
