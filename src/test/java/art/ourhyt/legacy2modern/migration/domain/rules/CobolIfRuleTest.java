@@ -19,7 +19,7 @@ class CobolIfRuleTest {
 
         final RuleResult result = rule.apply(List.of("IF A = B THEN"), context);
 
-        assertEquals("if (A = B) {", result.updatedLines().getFirst());
+        assertEquals("if (a = b) {", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
         assertEquals(List.of(1), result.lineNumbers());
     }
@@ -31,13 +31,25 @@ class CobolIfRuleTest {
 
         final RuleResult result = rule.apply(List.of("IF A = B THEN."), context);
 
-        assertEquals("if (A = B) {", result.updatedLines().getFirst());
+        assertEquals("if (a = b) {", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
         assertEquals(List.of(1), result.lineNumbers());
     }
 
     @Test
-    void doesNotTransformIfWithoutThen() {
+    void transformsIfWithoutThenWhenConditionIsValid() {
+        final CobolIfRule rule = new CobolIfRule();
+        final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
+
+        final RuleResult result = rule.apply(List.of("IF AMOUNT > 0"), context);
+
+        assertEquals("if (amount > 0) {", result.updatedLines().getFirst());
+        assertEquals(1, result.matchesCount());
+        assertEquals(List.of(1), result.lineNumbers());
+    }
+
+    @Test
+    void doesNotTransformIfWithoutThenWhenConditionIsInvalid() {
         final CobolIfRule rule = new CobolIfRule();
         final MigrationContext context = new MigrationContext(SourceLanguage.COBOL, TargetLanguage.JAVA, null);
 

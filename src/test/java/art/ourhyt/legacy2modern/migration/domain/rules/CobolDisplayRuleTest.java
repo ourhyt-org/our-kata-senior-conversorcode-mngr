@@ -30,7 +30,7 @@ class CobolDisplayRuleTest {
 
         final RuleResult result = rule.apply(List.of("DISPLAY \"HELLO\"."), context);
 
-        assertEquals("System.out.println(\"HELLO\");", result.updatedLines().getFirst());
+        assertEquals("logger.info(\"HELLO\");", result.updatedLines().getFirst());
         assertEquals(1, result.matchesCount());
     }
 }

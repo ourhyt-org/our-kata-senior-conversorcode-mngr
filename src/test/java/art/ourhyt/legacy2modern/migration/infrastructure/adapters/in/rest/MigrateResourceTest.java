@@ -69,7 +69,7 @@ class MigrateResourceTest {
             .post("/migrate")
             .then()
             .statusCode(200)
-            .body("outputCode", equalTo("if (A = B) {\nSystem.out.println(\"HI\");\n}"))
+            .body("outputCode", equalTo("if (a = b) {\nlogger.info(\"HI\");\n}"))
             .body("report", hasKey("appliedRules"))
             .body("report", hasKey("warnings"))
             .body("report.appliedRules.size()", greaterThan(0));

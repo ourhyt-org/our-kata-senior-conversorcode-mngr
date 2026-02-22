@@ -13,7 +13,11 @@ import java.util.regex.Pattern;
 
 public final class CobolIfRule implements Rule {
     private static final Pattern IF_PATTERN =
-            Patterns.cobolStmt("IF\\s+(.+?)\\s+THEN\\b");
+            Patterns.cobolStmt("IF\\s+(.+?)(?:\\s+THEN\\b)?");
+    private static final Pattern SIMPLE_CONDITION_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9_\"'().+-]+\\s*(?:=|<>|<=|>=|<|>)\\s*[A-Za-z0-9_\"'().+-]+(?:\\s+(?:AND|OR)\\s+[A-Za-z0-9_\"'().+-]+\\s*(?:=|<>|<=|>=|<|>)\\s*[A-Za-z0-9_\"'().+-]+)*$",
+            Pattern.CASE_INSENSITIVE
+    );
 
     @Override
     public String id() {
@@ -39,9 +43,41 @@ public final class CobolIfRule implements Rule {
             final String normalized = LegacyLineNormalizer.normalizeCobolStatement(line);
             final var matcher = IF_PATTERN.matcher(normalized);
             if (matcher.matches()) {
-                return Optional.of("if (" + matcher.group(2).trim() + ") {");
+                final String condition = matcher.group(2).trim();
+                if (isLikelyCondition(condition)) {
+                    return Optional.of("if (" + normalizeCondition(condition) + ") {");
+                }
             }
             return Optional.empty();
         });
+    }
+
+    private boolean isLikelyCondition(String condition) {
+        return SIMPLE_CONDITION_PATTERN.matcher(condition).matches();
+    }
+
+    private String normalizeCondition(String condition) {
+        final StringBuilder result = new StringBuilder(condition.length());
+        boolean inSingleQuotes = false;
+        boolean inDoubleQuotes = false;
+        for (int i = 0; i < condition.length(); i++) {
+            final char current = condition.charAt(i);
+            if (current == '\'' && !inDoubleQuotes) {
+                inSingleQuotes = !inSingleQuotes;
+                result.append(current);
+                continue;
+            }
+            if (current == '"' && !inSingleQuotes) {
+                inDoubleQuotes = !inDoubleQuotes;
+                result.append(current);
+                continue;
+            }
+            if (!inSingleQuotes && !inDoubleQuotes) {
+                result.append(Character.toLowerCase(current));
+                continue;
+            }
+            result.append(current);
+        }
+        return result.toString();
     }
 }

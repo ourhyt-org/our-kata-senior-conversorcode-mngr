@@ -56,7 +56,7 @@ public final class CobolDisplayRule implements Rule {
 
     private String renderDisplay(String payload, TargetLanguage targetLanguage) {
         return switch (targetLanguage) {
-            case JAVA -> "System.out.println(" + payload + ");";
+            case JAVA -> "logger.info(" + payload + ");";
             case NODE -> "console.log(" + payload + ");";
             case PYTHON -> "print(" + payload + ")";
             case GO -> "fmt.Println(" + payload + ")";
