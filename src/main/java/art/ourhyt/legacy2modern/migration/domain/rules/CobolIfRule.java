@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 
 public final class CobolIfRule implements Rule {
     private static final Pattern IF_PATTERN =
-            Patterns.cobolStmt("IF\\s+(.+?)(?:\\s+THEN)?");
+            Patterns.cobolStmt("IF\\s+(.+?)(?:\\s+THEN\\b)?");
 
     @Override
     public String id() {
