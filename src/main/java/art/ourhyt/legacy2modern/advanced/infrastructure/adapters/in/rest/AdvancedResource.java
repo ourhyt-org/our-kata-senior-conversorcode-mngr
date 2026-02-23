@@ -15,11 +15,15 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
+
+import java.util.UUID;
 
 @Path("/advanced")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AdvancedResource {
+    private static final Logger LOG = Logger.getLogger(AdvancedResource.class);
     private final CreateAdvancedConversionInputPort createAdvancedConversionInputPort;
     private final GetAdvancedQuotaInputPort getAdvancedQuotaInputPort;
     private final AdvancedHttpMapper mapper;
@@ -34,14 +38,42 @@ public class AdvancedResource {
     @POST
     @Path("/conversions")
     public Response create(@HeaderParam("Authorization") String authorizationHeader, @Valid CreateConversionHttpRequest request) {
+        final String requestId = UUID.randomUUID().toString();
+        LOG.infov(
+            "requestId={0} endpoint=POST /advanced/conversions step=received hasAuthHeader={1} source={2} target={3}",
+            requestId,
+            authorizationHeader != null && !authorizationHeader.isBlank(),
+            request.languageSelected(),
+            request.languageTarget()
+        );
         final AdvancedCreateConversionResponseModel response = createAdvancedConversionInputPort.execute(authorizationHeader, mapper.toApplication(request));
+        LOG.infov(
+            "requestId={0} endpoint=POST /advanced/conversions step=completed jobId={1} status={2} quotaRemaining={3}",
+            requestId,
+            response.jobId(),
+            response.status(),
+            response.quota().remaining()
+        );
         return Response.status(Response.Status.ACCEPTED).entity(mapper.fromApplication(response)).build();
     }
 
     @GET
     @Path("/quota")
     public AdvancedQuotaHttpResponse quota(@HeaderParam("Authorization") String authorizationHeader) {
+        final String requestId = UUID.randomUUID().toString();
+        LOG.infov(
+            "requestId={0} endpoint=GET /advanced/quota step=received hasAuthHeader={1}",
+            requestId,
+            authorizationHeader != null && !authorizationHeader.isBlank()
+        );
         final AdvancedQuotaResponseModel response = getAdvancedQuotaInputPort.execute(authorizationHeader);
+        LOG.infov(
+            "requestId={0} endpoint=GET /advanced/quota step=completed used={1} limit={2} remaining={3}",
+            requestId,
+            response.quota().used(),
+            response.quota().limit(),
+            response.quota().remaining()
+        );
         return mapper.fromApplication(response);
     }
 }

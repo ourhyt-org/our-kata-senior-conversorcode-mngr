@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import org.jboss.logging.Logger;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ import java.util.Map;
 
 @ApplicationScoped
 public class DynamoAdvancedQuotaRepositoryAdapter implements AdvancedQuotaRepositoryPort {
+    private static final Logger LOG = Logger.getLogger(DynamoAdvancedQuotaRepositoryAdapter.class);
     private static final DateTimeFormatter DAY_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final DynamoDbClient dynamoDbClient;
@@ -41,6 +43,7 @@ public class DynamoAdvancedQuotaRepositoryAdapter implements AdvancedQuotaReposi
         final long ttl = Instant.now().plusSeconds(8L * 24L * 3600L).getEpochSecond();
         final Map<String, AttributeValue> key = key(userId, dayKey);
 
+        LOG.infov("userId={0} day={1} step=quota_consume_start table={2}", userId, dayKey, config.usageTable());
         final Map<String, String> names = Map.of("#limit", "limit", "#ttl", "ttl");
         final Map<String, AttributeValue> initValues = new HashMap<>();
         initValues.put(":limit", AttributeValue.builder().n(String.valueOf(defaultDailyLimit)).build());
@@ -77,10 +80,12 @@ public class DynamoAdvancedQuotaRepositoryAdapter implements AdvancedQuotaReposi
             dynamoDbClient.updateItem(consumeRequest);
         } catch (ConditionalCheckFailedException exception) {
             final QuotaStatus current = getToday(userId, defaultDailyLimit);
+            LOG.infov("userId={0} day={1} step=quota_consume_denied used={2} limit={3}", userId, dayKey, current.used(), current.limit());
             return new ConsumeQuotaResult(false, new QuotaStatus(current.limit(), current.limit(), 0, current.resetAt()));
         }
 
         final QuotaStatus updated = getToday(userId, defaultDailyLimit);
+        LOG.infov("userId={0} day={1} step=quota_consume_success used={2} limit={3}", userId, dayKey, updated.used(), updated.limit());
         return new ConsumeQuotaResult(true, updated);
     }
 
@@ -90,6 +95,7 @@ public class DynamoAdvancedQuotaRepositoryAdapter implements AdvancedQuotaReposi
         final String dayKey = day.format(DAY_FORMAT);
         final String resetAt = day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toString();
 
+        LOG.infov("userId={0} day={1} step=quota_read_start table={2}", userId, dayKey, config.usageTable());
         final GetItemRequest request = GetItemRequest.builder()
             .tableName(config.usageTable())
             .key(key(userId, dayKey))
@@ -97,12 +103,14 @@ public class DynamoAdvancedQuotaRepositoryAdapter implements AdvancedQuotaReposi
 
         final GetItemResponse response = dynamoDbClient.getItem(request);
         if (!response.hasItem() || response.item().isEmpty()) {
+            LOG.infov("userId={0} day={1} step=quota_read_empty defaultLimit={2}", userId, dayKey, defaultDailyLimit);
             return new QuotaStatus(defaultDailyLimit, 0, defaultDailyLimit, resetAt);
         }
 
         final int limit = readInt(response.item(), "limit", defaultDailyLimit);
         final int used = readInt(response.item(), "count", 0);
         final int remaining = Math.max(0, limit - used);
+        LOG.infov("userId={0} day={1} step=quota_read_success used={2} limit={3}", userId, dayKey, used, limit);
         return new QuotaStatus(limit, used, remaining, resetAt);
     }
 
