@@ -6,7 +6,9 @@ import art.ourhyt.legacy2modern.advanced.domain.ports.out.AdvancedConfigPort;
 import art.ourhyt.legacy2modern.advanced.domain.ports.out.JwtVerifierPort;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -80,11 +82,23 @@ public class SupabaseJwtVerifierAdapter implements JwtVerifierPort {
             throw unauthorized("Missing kid header");
         }
         final JWK jwk = jwksCache.getKey(config.supabaseJwksUrl(), kid);
-        if (!(jwk instanceof RSAKey rsaKey)) {
+        final JWSVerifier verifier;
+        if (jwk instanceof RSAKey rsaKey) {
+            try {
+                verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
+            } catch (JOSEException exception) {
+                throw unauthorized("Unable to resolve signing key");
+            }
+        } else if (jwk instanceof ECKey ecKey) {
+            try {
+                verifier = new ECDSAVerifier(ecKey);
+            } catch (JOSEException exception) {
+                throw unauthorized("Unable to resolve signing key");
+            }
+        } else {
             throw unauthorized("Unable to resolve signing key");
         }
         try {
-            final JWSVerifier verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
             if (!jwt.verify(verifier)) {
                 throw unauthorized("Invalid JWT signature");
             }

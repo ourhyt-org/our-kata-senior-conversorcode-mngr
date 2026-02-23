@@ -7,7 +7,10 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -120,6 +123,23 @@ class SupabaseJwtVerifierAdapterTest {
         assertEquals(2, client.calls);
     }
 
+    @Test
+    void validatesEs256Token() throws Exception {
+        final ECKey key = new ECKeyGeneratorSupport().generate("kid-ec-1");
+        final String jwks = new JWKSet(key.toPublicJWK()).toString();
+
+        final SupabaseJwtVerifierAdapter verifier = new SupabaseJwtVerifierAdapter(
+            new FixedConfig("my-aud"),
+            new JwksCache(new FixedJwksClient(List.of(jwks)), fixedClock()),
+            fixedClock()
+        );
+
+        final String token = signedEcToken(key, "kid-ec-1", "https://example.supabase.co/auth/v1", "user-ec-1", "ec@a.com", "my-aud", Instant.parse("2026-02-24T00:00:00Z"));
+        final AuthenticatedUser user = verifier.verifyAuthorizationHeader("Bearer " + token);
+
+        assertEquals("user-ec-1", user.userId());
+    }
+
     private String signedToken(RSAKey key, String kid, String issuer, String subject, String email, String audience, Instant expiration) throws JOSEException {
         final JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
             .issuer(issuer)
@@ -136,6 +156,25 @@ class SupabaseJwtVerifierAdapterTest {
             claims.build()
         );
         jwt.sign(new RSASSASigner(key));
+        return jwt.serialize();
+    }
+
+    private String signedEcToken(ECKey key, String kid, String issuer, String subject, String email, String audience, Instant expiration) throws JOSEException {
+        final JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
+            .issuer(issuer)
+            .subject(subject)
+            .expirationTime(java.util.Date.from(expiration))
+            .issueTime(java.util.Date.from(Instant.parse("2026-02-22T00:00:00Z")))
+            .audience(audience);
+        if (email != null) {
+            claims.claim("email", email);
+        }
+
+        final SignedJWT jwt = new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(kid).type(JOSEObjectType.JWT).build(),
+            claims.build()
+        );
+        jwt.sign(new ECDSASigner(key));
         return jwt.serialize();
     }
 
@@ -193,6 +232,16 @@ class SupabaseJwtVerifierAdapterTest {
         RSAKey generate(String kid) {
             try {
                 return new com.nimbusds.jose.jwk.gen.RSAKeyGenerator(2048).keyID(kid).generate();
+            } catch (JOSEException exception) {
+                throw new RuntimeException(exception);
+            }
+        }
+    }
+
+    private static final class ECKeyGeneratorSupport {
+        ECKey generate(String kid) {
+            try {
+                return new com.nimbusds.jose.jwk.gen.ECKeyGenerator(Curve.P_256).keyID(kid).generate();
             } catch (JOSEException exception) {
                 throw new RuntimeException(exception);
             }
