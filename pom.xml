@@ -8,12 +8,14 @@
 
     <properties>
         <compiler-plugin.version>3.14.1</compiler-plugin.version>
+        <jacoco.version>0.8.12</jacoco.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.27.0</quarkus.platform.version>
+        <aws.sdk.version>2.30.31</aws.sdk.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
     </properties>
@@ -24,6 +26,13 @@
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
                 <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -48,8 +57,25 @@
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
         <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>dynamodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sqs</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-mockito</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -111,6 +137,77 @@
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/application/dto/**</exclude>
+                                <exclude>**/domain/model/**</exclude>
+                                <exclude>**/domain/ports/**</exclude>
+                                <exclude>**/application/exceptions/**</exclude>
+                                <exclude>**/infrastructure/adapters/in/rest/**</exclude>
+                                <exclude>**/infrastructure/security/**</exclude>
+                                <exclude>**/*Mapper.class</exclude>
+                                <exclude>**/*HttpRequest.class</exclude>
+                                <exclude>**/*HttpResponse.class</exclude>
+                                <exclude>**/*Resource.class</exclude>
+                                <exclude>**/*ExceptionMapper.class</exclude>
+                                <exclude>**/Quarkuz21*</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/application/dto/**</exclude>
+                                <exclude>**/domain/model/**</exclude>
+                                <exclude>**/domain/ports/**</exclude>
+                                <exclude>**/application/exceptions/**</exclude>
+                                <exclude>**/infrastructure/adapters/in/rest/**</exclude>
+                                <exclude>**/infrastructure/security/**</exclude>
+                                <exclude>**/*Mapper.class</exclude>
+                                <exclude>**/*HttpRequest.class</exclude>
+                                <exclude>**/*HttpResponse.class</exclude>
+                                <exclude>**/*Resource.class</exclude>
+                                <exclude>**/*ExceptionMapper.class</exclude>
+                                <exclude>**/Quarkuz21*</exclude>
+                            </excludes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

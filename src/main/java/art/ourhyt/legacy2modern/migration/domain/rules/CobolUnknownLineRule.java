@@ -46,7 +46,7 @@ public final class CobolUnknownLineRule implements Rule {
         if (trimmed.startsWith("//") || trimmed.equals("}") || trimmed.equals("} else {") || trimmed.startsWith("if (")) {
             return false;
         }
-        if (trimmed.contains("=") || trimmed.startsWith("System.out.println") || trimmed.startsWith("console.log") || trimmed.startsWith("print(") || trimmed.startsWith("fmt.Println") || trimmed.equals("System.exit(0);") || trimmed.equals("return;")) {
+        if (trimmed.contains("=") || trimmed.startsWith("logger.info") || trimmed.startsWith("System.out.println") || trimmed.startsWith("console.log") || trimmed.startsWith("print(") || trimmed.startsWith("fmt.Println") || trimmed.equals("System.exit(0);") || trimmed.equals("return;")) {
             return false;
         }
         return true;
