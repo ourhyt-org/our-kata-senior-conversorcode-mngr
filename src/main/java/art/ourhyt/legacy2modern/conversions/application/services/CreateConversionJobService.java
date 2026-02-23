@@ -55,6 +55,7 @@ public class CreateConversionJobService implements CreateConversionJobInputPort 
         final String createdAt = Instant.now().toString();
         final String requestS3Key = "conversions/" + jobId + "/request.json";
         final String codeS3Key = "conversions/" + jobId + "/" + inputFileName(validated.languageSelected);
+        final Long ttl = Instant.now().plus(config.jobTtlDays(), ChronoUnit.DAYS).getEpochSecond();
 
         final Map<String, Object> requestJson = new LinkedHashMap<>();
         requestJson.put("languageSelected", validated.languageSelected);
@@ -63,10 +64,6 @@ public class CreateConversionJobService implements CreateConversionJobInputPort 
         requestJson.put("typeArchitected", validated.typeArchitected);
         requestJson.put("options", validated.options);
 
-        objectStore.putJson(requestS3Key, requestJson);
-        objectStore.putText(codeS3Key, validated.code);
-
-        final Long ttl = Instant.now().plus(config.jobTtlDays(), ChronoUnit.DAYS).getEpochSecond();
         final ConversionJob job = new ConversionJob(
             jobId,
             JobStatus.PENDING,
@@ -81,6 +78,17 @@ public class CreateConversionJobService implements CreateConversionJobInputPort 
             ttl
         );
         jobRepository.save(job);
+        LOG.infov("jobId={0} step=dynamodb_pending_saved requestS3Key={1} codeS3Key={2}", jobId, requestS3Key, codeS3Key);
+
+        try {
+            objectStore.putJson(requestS3Key, requestJson);
+            objectStore.putText(codeS3Key, validated.code);
+            LOG.infov("jobId={0} step=s3_inputs_uploaded requestS3Key={1} codeS3Key={2}", jobId, requestS3Key, codeS3Key);
+        } catch (RuntimeException exception) {
+            markFailed(job, "S3 upload failed: " + sanitize(exception.getMessage()));
+            LOG.errorv(exception, "jobId={0} step=s3_upload_failed", jobId);
+            throw exception;
+        }
 
         final ConversionMessage message = new ConversionMessage(
             jobId,
@@ -90,13 +98,44 @@ public class CreateConversionJobService implements CreateConversionJobInputPort 
             codeS3Key,
             new ConversionMessage.McpMessage(resolveMcpBaseUrl(validated.options), "convert_code")
         );
-        queuePublisher.publish(message);
+        try {
+            queuePublisher.publish(message);
+            LOG.infov("jobId={0} step=sqs_published queueUrl={1}", jobId, config.queueUrl());
+        } catch (RuntimeException exception) {
+            markFailed(job, "SQS publish failed: " + sanitize(exception.getMessage()));
+            LOG.errorv(exception, "jobId={0} step=sqs_publish_failed", jobId);
+            throw exception;
+        }
 
         final int codeSizeBytes = validated.code.getBytes(StandardCharsets.UTF_8).length;
         final String codeHash = sha256(validated.code);
         LOG.infov("jobId={0} event=conversion_enqueued source={1} target={2} codeBytes={3} codeSha256={4}", jobId, validated.languageSelected, validated.languageTarget, codeSizeBytes, codeHash);
 
         return new CreateConversionResponseModel(jobId, JobStatus.PENDING.name(), "/conversions/" + jobId);
+    }
+
+    private void markFailed(ConversionJob originalJob, String errorMessage) {
+        final ConversionJob failedJob = new ConversionJob(
+            originalJob.jobId(),
+            JobStatus.FAILED,
+            originalJob.createdAt(),
+            originalJob.startedAt(),
+            Instant.now().toString(),
+            originalJob.requestS3Key(),
+            originalJob.codeS3Key(),
+            originalJob.outputS3Key(),
+            originalJob.reportS3Key(),
+            errorMessage,
+            originalJob.ttl()
+        );
+        jobRepository.save(failedJob);
+    }
+
+    private String sanitize(String value) {
+        if (value == null || value.isBlank()) {
+            return "unknown error";
+        }
+        return value.length() > 300 ? value.substring(0, 300) : value;
     }
 
     private ValidatedRequest validate(CreateConversionRequestModel request) {

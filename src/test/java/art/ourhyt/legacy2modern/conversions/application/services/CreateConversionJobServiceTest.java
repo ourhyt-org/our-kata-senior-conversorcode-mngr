@@ -12,6 +12,7 @@ import art.ourhyt.legacy2modern.conversions.domain.ports.outputs.QueuePublisherP
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -81,12 +82,50 @@ class CreateConversionJobServiceTest {
         assertEquals("https://override.example.com", queuePublisher.lastMessage.mcp().baseUrl());
     }
 
+    @Test
+    void marksJobFailedWhenSqsPublishFails() {
+        final TrackingJobRepository jobRepository = new TrackingJobRepository();
+        final InMemoryObjectStore objectStore = new InMemoryObjectStore();
+        final QueuePublisherPort failingPublisher = message -> {
+            throw new IllegalStateException("sqs down");
+        };
+        final var service = new CreateConversionJobService(jobRepository, objectStore, failingPublisher, new FixedConfig());
+
+        final CreateConversionRequestModel request = new CreateConversionRequestModel(
+            "cobol",
+            "java",
+            "21",
+            "hexagonal",
+            "IF A = B THEN",
+            Map.of()
+        );
+
+        assertThrows(IllegalStateException.class, () -> service.execute(request));
+        assertEquals(2, jobRepository.savedJobs.size());
+        assertEquals("PENDING", jobRepository.savedJobs.get(0).status().name());
+        assertEquals("FAILED", jobRepository.savedJobs.get(1).status().name());
+    }
+
     private static final class InMemoryJobRepository implements JobRepositoryPort {
         private ConversionJob saved;
 
         @Override
         public void save(ConversionJob job) {
             this.saved = job;
+        }
+
+        @Override
+        public Optional<ConversionJob> findByJobId(String jobId) {
+            return Optional.empty();
+        }
+    }
+
+    private static final class TrackingJobRepository implements JobRepositoryPort {
+        private final List<ConversionJob> savedJobs = new java.util.ArrayList<>();
+
+        @Override
+        public void save(ConversionJob job) {
+            savedJobs.add(job);
         }
 
         @Override
