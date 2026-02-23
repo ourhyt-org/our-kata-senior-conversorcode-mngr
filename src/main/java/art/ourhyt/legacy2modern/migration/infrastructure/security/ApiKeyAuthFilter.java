@@ -20,6 +20,10 @@ public class ApiKeyAuthFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
+        final String requestPath = requestContext.getUriInfo().getRequestUri().getPath();
+        if (requestPath != null && requestPath.contains("/advanced/")) {
+            return;
+        }
         final String providedApiKey = requestContext.getHeaderString("X-API-KEY");
         if (providedApiKey == null || !providedApiKey.equals(configuredApiKey)) {
             final ErrorResponse body = new ErrorResponse(new ErrorResponse.ErrorBody("UNAUTHORIZED", "Invalid or missing API key", List.of("X-API-KEY header is required")));
