@@ -15,6 +15,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 import java.text.ParseException;
 import java.time.Clock;
@@ -24,6 +25,7 @@ import java.util.Locale;
 
 @ApplicationScoped
 public class SupabaseJwtVerifierAdapter implements JwtVerifierPort {
+    private static final Logger LOG = Logger.getLogger(SupabaseJwtVerifierAdapter.class);
     private final AdvancedConfigPort config;
     private final JwksCache jwksCache;
     private final Clock clock;
@@ -41,6 +43,7 @@ public class SupabaseJwtVerifierAdapter implements JwtVerifierPort {
 
     @Override
     public AuthenticatedUser verifyAuthorizationHeader(String authorizationHeader) {
+        LOG.infov("step=jwt_verify_start hasAuthHeader={0}", authorizationHeader != null && !authorizationHeader.isBlank());
         final String token = extractBearerToken(authorizationHeader);
         final SignedJWT jwt = parseJwt(token);
         verifySignature(jwt);
@@ -54,6 +57,7 @@ public class SupabaseJwtVerifierAdapter implements JwtVerifierPort {
 
         final Object emailClaim = claims.getClaim("email");
         final String email = emailClaim instanceof String emailValue && !emailValue.isBlank() ? emailValue : null;
+        LOG.infov("step=jwt_verify_success userId={0}", userId);
         return new AuthenticatedUser(userId, email);
     }
 
@@ -149,6 +153,7 @@ public class SupabaseJwtVerifierAdapter implements JwtVerifierPort {
     }
 
     private AdvancedUnauthorizedException unauthorized(String detail) {
+        LOG.warnv("step=jwt_verify_failed reason={0}", detail);
         return new AdvancedUnauthorizedException("UNAUTHORIZED", "Invalid or missing bearer token", List.of(detail));
     }
 }

@@ -15,12 +15,14 @@ import art.ourhyt.legacy2modern.conversions.application.dto.CreateConversionResp
 import art.ourhyt.legacy2modern.conversions.domain.ports.in.CreateConversionJobInputPort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
 public class CreateAdvancedConversionService implements CreateAdvancedConversionInputPort {
+    private static final Logger LOG = Logger.getLogger(CreateAdvancedConversionService.class);
     private final JwtVerifierPort jwtVerifier;
     private final AdvancedQuotaRepositoryPort quotaRepository;
     private final AdvancedConfigPort config;
@@ -37,7 +39,15 @@ public class CreateAdvancedConversionService implements CreateAdvancedConversion
     @Override
     public AdvancedCreateConversionResponseModel execute(String authorizationHeader, AdvancedCreateConversionRequestModel request) {
         final String userId = jwtVerifier.verifyAuthorizationHeader(authorizationHeader).userId();
+        LOG.infov("userId={0} step=advanced_jwt_validated", userId);
         final ConsumeQuotaResult consumed = quotaRepository.consumeDaily(userId, config.defaultDailyLimit());
+        LOG.infov(
+            "userId={0} step=advanced_quota_checked allowed={1} used={2} limit={3}",
+            userId,
+            consumed.allowed(),
+            consumed.quotaStatus().used(),
+            consumed.quotaStatus().limit()
+        );
         if (!consumed.allowed()) {
             final QuotaStatus quota = consumed.quotaStatus();
             throw new AdvancedQuotaExceededException(
@@ -61,6 +71,7 @@ public class CreateAdvancedConversionService implements CreateAdvancedConversion
                 request.options() == null ? Map.of() : request.options()
             )
         );
+        LOG.infov("userId={0} step=advanced_job_enqueued jobId={1}", userId, baseResponse.jobId());
 
         final QuotaStatus quotaStatus = consumed.quotaStatus();
         return new AdvancedCreateConversionResponseModel(
