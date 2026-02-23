@@ -2,7 +2,7 @@ name: Deploy Quarkus Lambda (Java 21) - QA
 
 on:
   push:
-    branches: [qa, feature/*]
+    branches: [qa]
   workflow_dispatch: {}
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
 
       - name: Build Lambda zip (Quarkus)
         run: |
-          mvn -q clean package -DskipTests
+          mvn -q clean package
           test -f target/function.zip
 
       - name: Configure AWS credentials (OIDC)
