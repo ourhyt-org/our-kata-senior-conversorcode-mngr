@@ -2,6 +2,7 @@ package art.ourhyt.legacy2modern.conversions.infrastructure.adapters.in.rest;
 
 import art.ourhyt.legacy2modern.conversions.application.dto.CreateConversionRequestModel;
 import art.ourhyt.legacy2modern.conversions.application.dto.CreateConversionResponseModel;
+import art.ourhyt.legacy2modern.conversions.application.dto.GetConversionFilesResponseModel;
 import art.ourhyt.legacy2modern.conversions.application.dto.GetConversionStatusResponseModel;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -36,6 +37,20 @@ public class ConversionsHttpMapper {
             response.downloadUrl(),
             response.reportUrl(),
             response.errorMessage()
+        );
+    }
+
+    public GetConversionFilesHttpResponse fromApplication(GetConversionFilesResponseModel response) {
+        return new GetConversionFilesHttpResponse(
+            response.jobId(),
+            response.status(),
+            response.outputS3Key(),
+            response.zipSizeBytes(),
+            response.defaultFile(),
+            response.recommendedFiles(),
+            response.manifest().stream().map(m -> new ManifestEntryHttpResponse(m.path(), m.sizeBytes(), m.isText())).toList(),
+            response.files().stream().map(f -> new FileContentHttpResponse(f.path(), f.content())).toList(),
+            response.skipped().stream().map(s -> new SkippedFileHttpResponse(s.path(), s.reason())).toList()
         );
     }
 }

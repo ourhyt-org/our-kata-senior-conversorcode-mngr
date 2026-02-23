@@ -6,8 +6,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.nio.charset.StandardCharsets;
@@ -39,6 +42,16 @@ public class S3ObjectStoreAdapter implements ObjectStorePort {
     @Override
     public void putText(String key, String payload) {
         putObject(key, "text/plain", payload.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public byte[] getObjectBytes(String bucket, String key) {
+        final GetObjectRequest request = GetObjectRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .build();
+        final ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
+        return response.asByteArray();
     }
 
     private void putObject(String key, String contentType, byte[] bytes) {

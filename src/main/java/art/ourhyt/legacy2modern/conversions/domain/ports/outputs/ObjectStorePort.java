@@ -6,4 +6,6 @@ public interface ObjectStorePort {
     void putJson(String key, Map<String, Object> payload);
 
     void putText(String key, String payload);
+
+    byte[] getObjectBytes(String bucket, String key);
 }

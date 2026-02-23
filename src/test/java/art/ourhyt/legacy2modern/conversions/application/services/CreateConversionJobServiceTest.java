@@ -147,6 +147,11 @@ class CreateConversionJobServiceTest {
         public void putText(String key, String payload) {
             textByKey.put(key, payload);
         }
+
+        @Override
+        public byte[] getObjectBytes(String bucket, String key) {
+            throw new UnsupportedOperationException("not needed in this test");
+        }
     }
 
     private static final class InMemoryQueuePublisher implements QueuePublisherPort {
